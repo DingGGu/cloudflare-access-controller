@@ -1,9 +1,27 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod download
+builds:
+  - main: ./main.go
+    env:
+      - CG_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+snapshot:
+  name_template: SNAPSHOT-{{.ShortCommit}}
 dockers:
-  -
-    goos: linux
+  - goos: linux
+    binaries:
+      - cloudflare-access-controller
     goarch: amd64
+    skip_push: false
     image_templates:
       - "dingggu/cloudflare-access-controller:{{ .Tag }}"
-      - "dingggu/cloudflare-access-controller:v{{ .Major }}"
-      - "dingggu/cloudflare-access-controller:v{{ .Major }}.{{ .Minor }}"
+      - "dingggu/cloudflare-access-controller:{{ .Major }}"
+      - "dingggu/cloudflare-access-controller:{{ .Major }}.{{ .Minor }}"
       - "dingggu/cloudflare-access-controller:latest"
