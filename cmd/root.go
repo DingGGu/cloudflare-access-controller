@@ -24,12 +24,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
+	"time"
 )
 
 func Execute() {
 	var clusterName string
 	var kubeConfig string
 	var zoneNames []string
+	var interval int
 
 	var rootCmd = &cobra.Command{
 		Use:   "cloudflare-access-controller",
@@ -67,7 +69,14 @@ Annotate Kubernetes ingress
 				zoneNames,
 			)
 
-			ctrl.Run()
+			if interval == 0 {
+				ctrl.Run()
+			} else {
+				for {
+					ctrl.Run()
+					time.Sleep(time.Duration(interval) * time.Second)
+				}
+			}
 		},
 	}
 
@@ -75,6 +84,7 @@ Annotate Kubernetes ingress
 	rootCmd.Flags().StringVarP(&clusterName, "clusterName", "c", "", "Cluster Name to identify multiple clusters in cloudflare (required)")
 	rootCmd.Flags().StringSliceVarP(&zoneNames, "zoneName", "z", []string{}, "Slice of cloudflare ZoneName (required)")
 	rootCmd.Flags().StringVarP(&kubeConfig, "kubeconfig", "k", "", "kubernetes config path")
+	rootCmd.Flags().IntVarP(&interval, "interval", "i", 0, "Interval second(s) (if not set or 0, RunOnce)")
 	rootCmd.MarkFlagRequired("clusterName")
 	rootCmd.MarkFlagRequired("zoneName")
 
