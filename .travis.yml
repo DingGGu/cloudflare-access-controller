@@ -1,6 +1,6 @@
 language: go
 go:
-- latest
+- master
 env:
   global:
   - GO111MODULE=on
