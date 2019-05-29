@@ -1,0 +1,18 @@
+language: go
+go:
+  - 1.12.x
+env:
+  global:
+    - GO111MODULE=on
+    - secure: dHIeNP57gs4MbY/vl4U7sfaActbEnABwQu30S/XsrNMae5wQu0PbghVDZ4YjeXHf2eifr4JJvlAeIrc3+bc7o6a66FReoN3nCzf5wFVlBtG1OjspF5SqMMw0cDJuPL0KWBXj8epwXzYzLOTOcxQBuNDw1a/PxbdZwzgmM/h9mJ1Ni9abaFPB16aljpTAhx5qIkWoYMeMfclECDmubI31/tybL0bl+KX428dSo3hDzMcBOdm+JNeMPXfr4EhhQ0IX6vue0R4RcGsgBZuB6DUK5SH/h4h5we3cY+TlNMEcknirB5QmbJT05DMhuKV8PQzvKvAdlQGTy5JML8t8+XxryM1seEcAc4u+GMhHGJl5n+Yj57i3cF6ENNIdCPDD+c4RxoyMFBTbgxr0xcVbEkR2b2RhQpoTU0exKBLsK+99MzigkcXopkmCwSi1M13eV23wWcpKrOK6l5hLFNTiLF9kr+kllCZ2DKLTLy731Yi5niMPj8X7KL8WW8NLeOK2nE7+VUVnONG5I3ZpMRuM/Y0duFVbje8OAMipFnvltjjs/pVwd3B+icHkbfb1n2K+480f5yS5SjV7G+JxVSJrX4lwJ1wpzdlqNPYCkLHvAESKa2RbgReaQcnEOZPJf1yWM9H0zHS7PqCgi98EgOW8fA3TpqpgxHHwdCSiiV63Sto6bp8=
+    - secure: EiQF+fYFbq1TW4RNRozioA9KIF5okSfJQcITlSDXBl0NIDXtQL93N96enjx5RosTypkOhIrMdgpF1W134rWlwltfKxdWng2Pti9by8eqD/jU+/eU/abYBQAWIrwzlXclPTKDFKYPQUCCihSbNQIamQNUiRTGks5dPZER23LaPTKX+iR/JWiA04OiwQ5S5duRI3/Kz4lhhimVK5X5LLeoAShUnJQBQ7EjUqVINa/lNsIo2zT+6DTvJt/MiIKvg84JkGW15zn7rZyH1fXvRG3sqkYwYLWl0SuRJESpyRKjOPKBsHJxreWQJ/wmgczNaftGdYhxTNk4E1wQplZ5fMMVPAys9XGoxemfqdjeXk28c7oWXTkHLd2tN3xzCI4uypKO2zksMiftKfuERgpkkufNMdRBGqRr/9Su9ThJtqUbh0IIT8hnpOmSmeyChPb5fDqMWXc9SZYl5jV/WHWg72BERtg2rIyWX25dtm/1b4uHcPgXgdnx2RZPxxg6KzXmuI6vH5bYCTs7R4H0+z0Jv2MBzqefEb9p3IPjpZWLmgF2KSum3j2vOVx7HAwPh+/MEgVOlurM1F/5H58FsNUwHGJjU2Y4O6na9ul/cuxh+4vyesRbayTvQoyVhc1T2pfiz1PD/deVWQI0F9S1gD751YfZgfltEWHwUrsNttWKafqQZTQ=
+services:
+  - docker
+after_success:
+  - test -n "$TRAVIS_TAG" && docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+deploy:
+  - provider: script
+    skip_cleanup: true
+    script: curl -sL https://git.io/gorelease | bash
+    on:
+      condition: "$TRAVIS_OS_NAME = linux"
