@@ -1,8 +1,7 @@
-<p align="center">
-<h2>Cloudflare Access Controller</h2>
+## Cloudflare Access Controller
 [![Build Status](https://travis-ci.org/DingGGu/cloudflare-access-controller.svg?branch=master)](https://travis-ci.org/DingGGu/cloudflare-access-controller)
-<h5>Support handling cloudflare access via kubernetes ingress annotations.</h5>
-</p>
+##### Support handling cloudflare access via kubernetes ingress annotations.
+
 
 ### List of annotations for configuration
 - **access.cloudflare.com/zone-name**: 'ggu.la' # domain name
