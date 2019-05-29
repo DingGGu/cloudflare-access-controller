@@ -7,5 +7,4 @@ RUN GCO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o build/cloudflare-access
 
 FROM scratch
 COPY --from=builder /app/build ./
-RUN chmod +x ./cloudflare-access-controller
 ENTRYPOINT ["./cloudflare-access-controller"]
