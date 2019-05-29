@@ -19,14 +19,11 @@ import (
 	"github.com/DingGGu/cloudflare-access-controller/internal/controller"
 	"github.com/DingGGu/cloudflare-access-controller/internal/provider/cf"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 	"os"
-	"path/filepath"
-
-	"github.com/spf13/cobra"
 )
 
 func Execute() {
@@ -44,8 +41,10 @@ Annotate Kubernetes ingress
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 			logrus.SetLevel(logrus.DebugLevel)
 
-			if home := homedir.HomeDir(); home != "" && kubeConfig == "" {
-				kubeConfig = filepath.Join(home, ".kube", "config")
+			if kubeConfig == "" {
+				if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+					kubeConfig = clientcmd.RecommendedHomeFile
+				}
 			}
 
 			config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
