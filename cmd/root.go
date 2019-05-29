@@ -43,6 +43,8 @@ Annotate Kubernetes ingress
 			logrus.SetFormatter(&logrus.JSONFormatter{})
 			logrus.SetLevel(logrus.DebugLevel)
 
+			//flag.Set("logtostderr", "true") // https://github.com/containous/traefik/issues/1785
+
 			if kubeConfig == "" {
 				if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
 					kubeConfig = clientcmd.RecommendedHomeFile
