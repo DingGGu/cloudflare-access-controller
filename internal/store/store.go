@@ -249,8 +249,8 @@ func (s Store) checkPolicyDifference(source cloudflare.AccessPolicy, remote clou
 		return true
 	}
 
-	if reflect.DeepEqual(source.Include, remote.Include) ||
-		reflect.DeepEqual(source.Require, remote.Require) ||
+	if reflect.DeepEqual(source.Include, remote.Include) &&
+		reflect.DeepEqual(source.Require, remote.Require) &&
 		reflect.DeepEqual(source.Exclude, remote.Exclude) {
 		return false
 	}
