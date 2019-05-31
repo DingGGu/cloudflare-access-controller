@@ -4,6 +4,8 @@ go:
 env:
   global:
     - GO111MODULE=on
+script:
+  - make
 services:
   - docker
 after_success:
