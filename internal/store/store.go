@@ -177,7 +177,7 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Println("Successfully updated policy (%s) %s", update.AppId, update.Policy)
+			logrus.Printf("Successfully updated policy (%s) %v", update.AppId, update.Policy)
 		}
 	}
 
@@ -186,7 +186,7 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Println("Successfully deleted policy (%s) %s", del.AppId, del.Policy)
+			logrus.Printf("Successfully deleted policy (%s) %v", del.AppId, del.Policy)
 		}
 	}
 
@@ -195,7 +195,7 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Println("Successfully created policy (%s) %s", create.AppId, create.Policy)
+			logrus.Printf("Successfully created policy (%s) %v", create.AppId, create.Policy)
 		}
 	}
 }
