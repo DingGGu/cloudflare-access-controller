@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-access-controller
+  labels:
+    app: cloudflare-access-controller
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-access-controller
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      name: cloudflare-access-controller
+      labels:
+        app: cloudflare-access-controller
+    spec:
+      serviceAccountName: cloudflare-access-controller
+      containers:
+        - name: cac
+          image: dingggu/cloudflare-access-controller:0.1.0
+          imagePullPolicy: Always
+          args:
+            - -z
+            - "cloudflare.zone.name.com"
+            - -c
+            - "identifier.for.cluster.name"
+            - -i
+            - "60"
+          envFrom:
+            - secretRef:
+                name: cloudflare-access-controller
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloudflare-access-controller
+  namespace: kube-system
+  labels:
+    name: cloudflare-access-controller
+rules:
+  - apiGroups:
+      - ""
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloudflare-access-controller
+  namespace: kube-system
+  labels:
+    app: cloudflare-access-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloudflare-access-controller
+subjects:
+  - kind: ServiceAccount
+    name: cloudflare-access-controller
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloudflare-access-controller
+  namespace: kube-system
+  labels:
+    app: cloudflare-access-controller
