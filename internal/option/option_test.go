@@ -2,7 +2,7 @@ package option_test
 
 import (
 	"github.com/DingGGu/cloudflare-access-controller/internal/option"
-	"github.com/magiconair/properties/assert"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 

@@ -4,9 +4,10 @@ import (
 	"github.com/DingGGu/cloudflare-access-controller/internal/option"
 	"github.com/DingGGu/cloudflare-access-controller/internal/provider/cf"
 	"github.com/cloudflare/cloudflare-go"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -249,9 +250,9 @@ func (s Store) checkPolicyDifference(source cloudflare.AccessPolicy, remote clou
 		return true
 	}
 
-	if reflect.DeepEqual(source.Include, remote.Include) &&
-		reflect.DeepEqual(source.Require, remote.Require) &&
-		reflect.DeepEqual(source.Exclude, remote.Exclude) {
+	if Equal(source.Include, remote.Include) &&
+		Equal(source.Require, remote.Require) &&
+		Equal(source.Exclude, remote.Exclude) {
 		return false
 	}
 
@@ -272,6 +273,10 @@ func createMapAppName(apps []option.AccessApp) map[string]option.AccessApp {
 	}
 
 	return appMap
+}
+
+func Equal(a, b []interface{}) bool {
+	return cmp.Equal(a, b, cmpopts.EquateEmpty())
 }
 
 func Index(a []cloudflare.AccessPolicy, index int) (*cloudflare.AccessPolicy, bool) {
