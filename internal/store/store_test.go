@@ -96,7 +96,7 @@ func TestCheckProvidersDeleteRemote(t *testing.T) {
 		Return([]cloudflare.AccessPolicy{}, cloudflare.ResultInfo{}, nil)
 
 	s := Store{
-		ClusterUID: "test",
+		ClusterUID: clusterUID,
 		CloudFlareProvider: &cf.CloudFlareProvider{
 			Api: &mockClient,
 		},
@@ -122,7 +122,7 @@ func TestCheckProvidersCreateRemote(t *testing.T) {
 		Return([]cloudflare.AccessPolicy{}, cloudflare.ResultInfo{}, nil)
 
 	s := Store{
-		ClusterUID: "test",
+		ClusterUID: clusterUID,
 		CloudFlareProvider: &cf.CloudFlareProvider{
 			Api: &mockClient,
 		},
@@ -171,7 +171,7 @@ func TestCheckProvidersUpdateRemote(t *testing.T) {
 		Return(zoneName, nil)
 	mockClient.On("AccessApplications", mock.Anything, mock.Anything).
 		Return([]cloudflare.AccessApplication{
-			{ // Update
+			{ // Same
 				ID:              "testUUID1",
 				Name:            strings.Join([]string{clusterUID, Namespace, "testIngress1"}, "-"),
 				Domain:          "subdomain.test.zone.name/path",
@@ -200,7 +200,7 @@ func TestCheckProvidersUpdateRemote(t *testing.T) {
 		Return([]cloudflare.AccessPolicy{}, cloudflare.ResultInfo{}, nil)
 
 	s := Store{
-		ClusterUID: "test",
+		ClusterUID: clusterUID,
 		CloudFlareProvider: &cf.CloudFlareProvider{
 			Api: &mockClient,
 		},
@@ -243,13 +243,12 @@ func TestCheckProvidersUpdateRemote(t *testing.T) {
 	}, []string{zoneName})
 
 	assert.Equal(t, planApp.Updates[0].ZoneName, zoneName)
-	assert.Equal(t, planApp.Updates[1].ZoneName, zoneName)
 	assert.Equal(t, planApp.Creates[0].ZoneName, zoneName)
 	assert.Equal(t, planApp.Creates[0].App.Name, "testCluster-testNamespace-testIngress5")
 	assert.Equal(t, planApp.Deletes[0].ZoneName, zoneName)
-	assert.Equal(t, planApp.Deletes[0].App.Name, "testCluster-testNamespace-testIngress2")
+	assert.Equal(t, planApp.Deletes[0].App.ID, "testUUID2")
 	assert.Equal(t, planApp.Deletes[1].ZoneName, zoneName)
-	assert.Equal(t, planApp.Deletes[1].App.Name, "testCluster-testNamespace-testIngress4")
+	assert.Equal(t, planApp.Deletes[1].App.ID, "testUUID4")
 }
 
 func TestCheckProvidersSame(t *testing.T) {
@@ -275,7 +274,7 @@ func TestCheckProvidersSame(t *testing.T) {
 		Return([]cloudflare.AccessPolicy{}, cloudflare.ResultInfo{}, nil)
 
 	s := Store{
-		ClusterUID: "test",
+		ClusterUID: clusterUID,
 		CloudFlareProvider: &cf.CloudFlareProvider{
 			Api: &mockClient,
 		},

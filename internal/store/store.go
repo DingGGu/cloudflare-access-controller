@@ -49,73 +49,67 @@ func (s Store) Run(apps []option.AccessApp, cfZoneNames []string) {
 	s.ApplyPolicyChanges(planPolicy)
 }
 
-func (s Store) CheckProviders(apps []option.AccessApp, cfZoneNames []string) (*PlanApp, *PlanPolicy) {
+func (s Store) CheckProviders(sourceApps []option.AccessApp, cfZoneNames []string) (*PlanApp, *PlanPolicy) {
 	planApp := PlanApp{}
 	planPolicy := PlanPolicy{}
-	appMap := createMapAppName(apps)
 
 	for _, zoneName := range cfZoneNames {
-		cfAppMap := s.CloudFlareProvider.GetAccessApplications(zoneName)
-		for cfAppId, cfApp := range cfAppMap {
-			if cfApp.CfZoneName != zoneName &&
-				s.checkManagedAccess(cfApp) {
+		remoteApps := s.CloudFlareProvider.GetAccessApplications(zoneName, s.ClusterUID)
+		for _, remoteApp := range remoteApps {
+			// Check belong to Cluster
+			if !s.IsClusterAccessApp(remoteApp) {
 				continue
 			}
 
-			cfPolicies := s.CloudFlareProvider.GetAccessPolicies(cfApp.CfZoneName, cfAppId)
-			cfApp.AccessAppPolicies = cfPolicies
+			remotePolicies := s.CloudFlareProvider.GetAccessPolicies(remoteApp.CfZoneName, remoteApp.RemoteID)
+			remoteApp.AccessAppPolicies = remotePolicies
 
-			existCf := false
-
-			for k8sAppName, k8sApp := range appMap {
-				if k8sAppName == cfApp.GetName() {
-					s.validatePolicy(&planPolicy, k8sApp, cfApp, cfAppId)
-					// Start compare
-					if k8sApp.AccessAppOption.Domain != cfApp.AccessAppOption.Domain ||
-						k8sApp.AccessAppOption.SessionDuration != cfApp.AccessAppOption.SessionDuration {
-						// Need Update
-						planApp.Updates = append(planApp.Updates, AppEndPoint{
-							ZoneName: k8sApp.CfZoneName,
-							App: cloudflare.AccessApplication{
-								ID:              cfAppId,
-								Name:            k8sApp.GetName(),
-								Domain:          k8sApp.AccessAppOption.Domain,
-								SessionDuration: k8sApp.AccessAppOption.SessionDuration,
-							},
-						})
-					} else {
-						logrus.Printf("Skip already app: %s/%s", k8sApp.CfZoneName, k8sApp.GetName())
-					}
-					delete(appMap, k8sAppName)
-					existCf = true
-					break
+			if sourceApp, ok := FindApp(sourceApps, remoteApp.GetName()); ok {
+				sourceApp.RemoteExisted = true
+				// Compare Policy
+				s.validatePolicy(&planPolicy, *sourceApp, remoteApp, remoteApp.RemoteID)
+				// Compare App
+				if s.checkAppDifference(*sourceApp, remoteApp) {
+					planApp.Updates = append(planApp.Updates, AppEndPoint{
+						ZoneName: sourceApp.CfZoneName,
+						App: cloudflare.AccessApplication{
+							ID:              remoteApp.RemoteID,
+							Name:            sourceApp.GetName(),
+							Domain:          sourceApp.AccessAppOption.Domain,
+							SessionDuration: sourceApp.AccessAppOption.SessionDuration,
+						},
+					})
+				} else {
+					logrus.WithFields(logrus.Fields{
+						"zoneName": zoneName,
+						"appName":  remoteApp.GetName(),
+					}).Info("Skip already exist access application")
 				}
-			}
-
-			if !existCf {
-				// Delete App
+			} else {
 				planApp.Deletes = append(planApp.Deletes, AppEndPoint{
 					ZoneName: zoneName,
 					App: cloudflare.AccessApplication{
-						ID: cfAppId,
+						ID: remoteApp.RemoteID,
 					},
 				})
 			}
 		}
 	}
+	for _, sourceApp := range sourceApps {
 
-	for k8sAppName, k8sApp := range appMap {
-		// Create App via remains
+		if sourceApp.RemoteExisted {
+			continue
+		}
+
 		planApp.Creates = append(planApp.Creates, AppEndPoint{
-			ZoneName: k8sApp.CfZoneName,
+			ZoneName: sourceApp.CfZoneName,
 			App: cloudflare.AccessApplication{
-				Name:            k8sApp.GetName(),
-				Domain:          k8sApp.AccessAppOption.Domain,
-				SessionDuration: k8sApp.AccessAppOption.SessionDuration,
+				Name:            sourceApp.GetName(),
+				Domain:          sourceApp.AccessAppOption.Domain,
+				SessionDuration: sourceApp.AccessAppOption.SessionDuration,
 			},
-			Policies: k8sApp.AccessAppPolicies,
+			Policies: sourceApp.AccessAppPolicies,
 		})
-		delete(appMap, k8sAppName) // Noting to do. maybe usage for double check? (If operation properly, Map will be empty)
 	}
 
 	return &planApp, &planPolicy
@@ -129,7 +123,10 @@ func (s Store) ApplyAppChanges(planApp *PlanApp, planPolicy *PlanPolicy) {
 			logrus.Error(err)
 		} else {
 			// todo: Need to added k8s status field
-			logrus.Printf("Successfully updated application %s", updatedAccessApplication)
+			logrus.WithFields(logrus.Fields{
+				"zoneName": update.ZoneName,
+				"appName":  updatedAccessApplication.Name,
+			}).Info("Successfully updated access application")
 		}
 	}
 	for _, del := range planApp.Deletes {
@@ -138,7 +135,10 @@ func (s Store) ApplyAppChanges(planApp *PlanApp, planPolicy *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Printf("Successfully deleted application %s", del.App)
+			logrus.WithFields(logrus.Fields{
+				"zoneName": del.ZoneName,
+				"appName":  del.App.Name,
+			}).Info("Successfully deleted access application")
 		}
 	}
 	for _, create := range planApp.Creates {
@@ -150,13 +150,12 @@ func (s Store) ApplyAppChanges(planApp *PlanApp, planPolicy *PlanPolicy) {
 			//ing := create.Ingress
 			//ingClient := s.KubeClient.ExtensionsV1beta1().Ingresses(ing.Namespace)
 
-			// todo: Need to added k8s status field
 			logrus.WithFields(logrus.Fields{
 				"zoneName": create.ZoneName,
 				"domain":   create.App.Domain,
 				"aud":      create.App.AUD,
-				"name":     create.App.Name,
-			}).Infof("Successfully created application")
+				"appName":  create.App.Name,
+			}).Info("Successfully created application")
 
 			// Also create policies for first App
 			for idx, policy := range create.Policies {
@@ -178,7 +177,11 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Printf("Successfully updated policy (%s) %v", update.AppId, update.Policy)
+			logrus.WithFields(logrus.Fields{
+				"zoneName":   update.ZoneName,
+				"appName":    update.AppId,
+				"policyName": update.Policy.Name,
+			}).Info("Successfully updated policy")
 		}
 	}
 
@@ -187,7 +190,11 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Printf("Successfully deleted policy (%s) %v", del.AppId, del.Policy)
+			logrus.WithFields(logrus.Fields{
+				"zoneName":   del.ZoneName,
+				"appName":    del.AppId,
+				"policyName": del.Policy.Name,
+			}).Info("Successfully deleted policy")
 		}
 	}
 
@@ -196,7 +203,11 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 		if err != nil {
 			logrus.Error(err)
 		} else {
-			logrus.Printf("Successfully created policy (%s) %v", create.AppId, create.Policy)
+			logrus.WithFields(logrus.Fields{
+				"zoneName":   create.ZoneName,
+				"appName":    create.AppId,
+				"policyName": create.Policy.Name,
+			}).Info("Successfully created policy")
 		}
 	}
 }
@@ -209,7 +220,7 @@ func (s Store) validatePolicy(policyPlan *PlanPolicy, sourceApp option.AccessApp
 
 	for idx := 0; idx < len(sourcePolicies); idx++ {
 		source := sourcePolicies[idx]
-		if remote, ok := Index(remotePolicies, idx); ok {
+		if remote, ok := IndexPolicy(remotePolicies, idx); ok {
 			if s.checkPolicyDifference(source, *remote) {
 				source.Name = remote.Name // Overwrite original policy name
 				policyPlan.Updates = append(policyPlan.Updates, PolicyEndpoint{
@@ -219,7 +230,11 @@ func (s Store) validatePolicy(policyPlan *PlanPolicy, sourceApp option.AccessApp
 					PolicyId: remote.ID,
 				})
 			} else {
-				logrus.Printf("Skip already exist policy: %s/%s/%s", remoteApp.CfZoneName, remoteApp.GetName(), remote.Name)
+				logrus.WithFields(logrus.Fields{
+					"zoneName":   remoteApp.CfZoneName,
+					"appName":    remoteApp.GetName(),
+					"policyName": remote.Name,
+				}).Info("Skip already exist policy")
 			}
 			sourcePolicies = append(sourcePolicies[:idx], sourcePolicies[idx+1:]...)
 			remotePolicies = append(remotePolicies[:idx], remotePolicies[idx+1:]...)
@@ -245,6 +260,15 @@ func (s Store) validatePolicy(policyPlan *PlanPolicy, sourceApp option.AccessApp
 	}
 }
 
+func (s Store) checkAppDifference(source, remote option.AccessApp) bool {
+	if source.AccessAppOption.Domain != remote.AccessAppOption.Domain ||
+		source.AccessAppOption.SessionDuration != remote.AccessAppOption.SessionDuration {
+		return true
+	}
+
+	return false
+}
+
 func (s Store) checkPolicyDifference(source cloudflare.AccessPolicy, remote cloudflare.AccessPolicy) bool {
 	if source.Decision != remote.Decision {
 		return true
@@ -259,27 +283,27 @@ func (s Store) checkPolicyDifference(source cloudflare.AccessPolicy, remote clou
 	return true
 }
 
-func (s Store) checkManagedAccess(app option.AccessApp) bool {
+func (s Store) IsClusterAccessApp(app option.AccessApp) bool {
 	if app.ClusterUID == s.ClusterUID {
 		return true
 	}
 	return false
 }
 
-func createMapAppName(apps []option.AccessApp) map[string]option.AccessApp {
-	var appMap = make(map[string]option.AccessApp)
-	for _, app := range apps {
-		appMap[app.GetName()] = app
-	}
-
-	return appMap
-}
-
 func Equal(a, b []interface{}) bool {
 	return cmp.Equal(a, b, cmpopts.EquateEmpty())
 }
 
-func Index(a []cloudflare.AccessPolicy, index int) (*cloudflare.AccessPolicy, bool) {
+func FindApp(a []option.AccessApp, appName string) (*option.AccessApp, bool) {
+	for idx, b := range a {
+		if b.GetName() == appName {
+			return &a[idx], true
+		}
+	}
+	return nil, false
+}
+
+func IndexPolicy(a []cloudflare.AccessPolicy, index int) (*cloudflare.AccessPolicy, bool) {
 	if len(a) > index {
 		return &a[index], true
 	} else {

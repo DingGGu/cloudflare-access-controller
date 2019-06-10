@@ -57,7 +57,11 @@ func (cf CloudFlareProvider) getZoneIDByName(zoneName string) string {
 	return zoneId
 }
 
-func (cf CloudFlareProvider) GetAccessApplications(zoneName string) map[string]option.AccessApp {
+var (
+	seperator = "-"
+)
+
+func (cf CloudFlareProvider) GetAccessApplications(zoneName, clusterUID string) []option.AccessApp {
 	zoneId := cf.getZoneIDByName(zoneName)
 	applications, _, err := cf.Api.AccessApplications(zoneId, cloudflare.PaginationOptions{})
 
@@ -66,25 +70,34 @@ func (cf CloudFlareProvider) GetAccessApplications(zoneName string) map[string]o
 		os.Exit(1)
 	}
 
-	var m = make(map[string]option.AccessApp)
+	//var m = make(map[string]option.AccessApp)
+	var m []option.AccessApp
 
 	for _, app := range applications {
-		split := strings.Split(app.Name, "-")
 		// Get Managed Cloudflare Accesses
-		if len(split) == 3 {
-			clusterUID, namespace, ingressName := split[0], split[1], split[2]
+		if strings.HasPrefix(app.Name, clusterUID) {
+			split := strings.Split(app.Name, seperator)
+			clusterUID, namespace, ingressName := split[0], split[1], strings.Join(split[2:], seperator)
+			if ingressName == "" {
+				logrus.WithFields(logrus.Fields{
+					"zoneName": zoneName,
+					"appName":  app.Name,
+				}).Panic("Invalid Ingress Name")
+				os.Exit(1)
+			}
 			cfOpt := option.AccessAppOption{
 				Domain:          app.Domain,
 				SessionDuration: app.SessionDuration,
 			}
-			m[app.ID] = option.AccessApp{
+			m = append(m, option.AccessApp{
 				ClusterUID:      clusterUID,
 				Namespace:       namespace,
 				IngressName:     ingressName,
 				CfZoneName:      zoneName,
 				AccessAppOption: cfOpt,
+				RemoteID:        app.ID,
 				Source:          "cf",
-			}
+			})
 		}
 	}
 

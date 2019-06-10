@@ -40,7 +40,9 @@ type AccessApp struct {
 	AccessAppOption
 	AccessAppPolicies []cloudflare.AccessPolicy
 	Source            string
+	RemoteID          string
 	Ingress           *v1beta1.Ingress
+	RemoteExisted     bool
 }
 
 func (app *AccessApp) GetName() string {
