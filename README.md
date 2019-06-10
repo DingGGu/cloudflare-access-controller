@@ -39,4 +39,4 @@ annotations:
 - More example: https://developers.cloudflare.com/access/setting-up-access/configuring-access-policies/
 
 ### Other Tips
-Cloudflare Access must be proxied (cloudflare edge). ExternalDNS makes it easy to manage Cloudflare's DNS with Kubernetes. It is strongly recommend using it with that.
+Cloudflare Access must be proxied (a.k.a orange cloud enabled). ExternalDNS makes it easy to manage Cloudflare's DNS with Kubernetes. It is strongly recommend using it with that.
