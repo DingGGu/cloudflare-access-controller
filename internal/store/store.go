@@ -119,11 +119,16 @@ func (s Store) ApplyAppChanges(planApp *PlanApp, planPolicy *PlanPolicy) {
 	for _, update := range planApp.Updates {
 		updatedAccessApplication, err := s.CloudFlareProvider.UpdateAccessApplication(update.ZoneName, update.App)
 
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName": update.ZoneName,
+			"appName":  update.App.Name,
+		})
+
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
 			// todo: Need to added k8s status field
-			logrus.WithFields(logrus.Fields{
+			log.WithFields(logrus.Fields{
 				"zoneName": update.ZoneName,
 				"appName":  updatedAccessApplication.Name,
 			}).Info("Successfully updated access application")
@@ -132,30 +137,31 @@ func (s Store) ApplyAppChanges(planApp *PlanApp, planPolicy *PlanPolicy) {
 	for _, del := range planApp.Deletes {
 		err := s.CloudFlareProvider.DeleteAccessApplication(del.ZoneName, del.App.ID)
 
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName": del.ZoneName,
+			"appName":  del.App.Name,
+		})
+
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
-			logrus.WithFields(logrus.Fields{
-				"zoneName": del.ZoneName,
-				"appName":  del.App.Name,
-			}).Info("Successfully deleted access application")
+			log.Info("Successfully deleted access application")
 		}
 	}
 	for _, create := range planApp.Creates {
 		createdAccessApplication, err := s.CloudFlareProvider.CreateAccessApplication(create.ZoneName, create.App)
 
-		if err != nil {
-			logrus.Error(err)
-		} else {
-			//ing := create.Ingress
-			//ingClient := s.KubeClient.ExtensionsV1beta1().Ingresses(ing.Namespace)
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName": create.ZoneName,
+			"domain":   create.App.Domain,
+			"aud":      create.App.AUD,
+			"appName":  create.App.Name,
+		})
 
-			logrus.WithFields(logrus.Fields{
-				"zoneName": create.ZoneName,
-				"domain":   create.App.Domain,
-				"aud":      create.App.AUD,
-				"appName":  create.App.Name,
-			}).Info("Successfully created application")
+		if err != nil {
+			log.Error(err)
+		} else {
+			log.Info("Successfully created application")
 
 			// Also create policies for first App
 			for idx, policy := range create.Policies {
@@ -174,40 +180,48 @@ func (s Store) ApplyPolicyChanges(policyPlan *PlanPolicy) {
 	for _, update := range policyPlan.Updates {
 		update.Policy.ID = update.PolicyId
 		_, err := s.CloudFlareProvider.UpdateAccessPolicy(update.ZoneName, update.AppId, update.Policy)
+
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName":   update.ZoneName,
+			"appName":    update.AppId,
+			"policyName": update.Policy.Name,
+		})
+
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
-			logrus.WithFields(logrus.Fields{
-				"zoneName":   update.ZoneName,
-				"appName":    update.AppId,
-				"policyName": update.Policy.Name,
-			}).Info("Successfully updated policy")
+			log.Info("Successfully updated policy")
 		}
 	}
 
 	for _, del := range policyPlan.Deletes {
 		err := s.CloudFlareProvider.DeleteAccessPolicy(del.ZoneName, del.AppId, del.PolicyId)
+
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName":   del.ZoneName,
+			"appName":    del.AppId,
+			"policyName": del.Policy.Name,
+		})
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
-			logrus.WithFields(logrus.Fields{
-				"zoneName":   del.ZoneName,
-				"appName":    del.AppId,
-				"policyName": del.Policy.Name,
-			}).Info("Successfully deleted policy")
+			log.Info("Successfully deleted policy")
 		}
 	}
 
 	for _, create := range policyPlan.Creates {
 		_, err := s.CloudFlareProvider.CreateAccessPolicy(create.ZoneName, create.AppId, create.Policy)
+
+		log := logrus.WithFields(logrus.Fields{
+			"zoneName":   create.ZoneName,
+			"appName":    create.AppId,
+			"policyName": create.Policy.Name,
+		})
+
 		if err != nil {
-			logrus.Error(err)
+			log.Error(err)
 		} else {
-			logrus.WithFields(logrus.Fields{
-				"zoneName":   create.ZoneName,
-				"appName":    create.AppId,
-				"policyName": create.Policy.Name,
-			}).Info("Successfully created policy")
+			log.Info("Successfully created policy")
 		}
 	}
 }
