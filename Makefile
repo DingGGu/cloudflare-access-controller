@@ -1,21 +1,12 @@
-GOCMD=go
-GOTEST=$(GOCMD) test
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-BINARY_NAME=cloudflare-access-controller
+ARCH?=amd64
+OS?=linux
 
-all: test build
-docker:
-	GOOS=linux GOARCH=amd64 $(GOBUILD) -o $(BINARY_NAME)
-	docker build .
-	rm $(BINARY_NAME)
-test:
-	$(GOTEST) ./...
+PKG=$(shell go list -m)
+
+.EXPORT_ALL_VARIABLES:
+
 build:
-	$(GOBUILD) -o build/$(BINARY_NAME) -v
-clean:
-	$(GOCLEAN)
-	rm -rf build/
-run:
-	$(GOBUILD) -o build/$(BINARY_NAME) -v ./...
-	./$(BINARY_NAME)
+	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -ldflags "-X $(PKG)/version.COMMIT=${GIT_COMMIT} -X $(PKG)/version.RELEASE=${GIT_TAG} -X $(PKG)/version.REPO=${GIT_REPO}" -o cloudflare-access-controller ./cmd
+
+docker:
+	docker build -t dingggu/cloudflare-access-controller .
