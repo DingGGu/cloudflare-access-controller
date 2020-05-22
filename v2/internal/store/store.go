@@ -42,6 +42,7 @@ func (s *Store) getApplications() error {
 	}
 
 	s.apps = res
+	return nil
 }
 
 func New(client *cloudflare.API, zoneId string) *Store {
