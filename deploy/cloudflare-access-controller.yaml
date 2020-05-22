@@ -4,7 +4,6 @@ metadata:
   name: cloudflare-access-controller
   labels:
     app: cloudflare-access-controller
-  namespace: kube-system
 spec:
   replicas: 1
   selector:
@@ -24,15 +23,13 @@ spec:
       serviceAccountName: cloudflare-access-controller
       containers:
         - name: cac
-          image: dingggu/cloudflare-access-controller:0.1.0
-          imagePullPolicy: Always
+          image: dingggu/cloudflare-access-controller:latest
+          imagePullPolicy: Never
           args:
             - -z
-            - "cloudflare.zone.name.com"
+            - "$(CF_ZONE_NAME)"
             - -c
             - "identifier.for.cluster.name"
-            - -i
-            - "60"
           envFrom:
             - secretRef:
                 name: cloudflare-access-controller
@@ -50,7 +47,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cloudflare-access-controller
-  namespace: kube-system
   labels:
     name: cloudflare-access-controller
 rules:
@@ -68,7 +64,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: cloudflare-access-controller
-  namespace: kube-system
   labels:
     app: cloudflare-access-controller
 roleRef:
@@ -78,12 +73,11 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: cloudflare-access-controller
-    namespace: kube-system
+    namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cloudflare-access-controller
-  namespace: kube-system
   labels:
     app: cloudflare-access-controller

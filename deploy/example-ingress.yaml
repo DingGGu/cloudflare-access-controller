@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: test
+  annotations:
+    access.cloudflare.com/application-sub-domain: 'test'
+    access.cloudflare.com/application-path: '/test/login'
+spec:
+  backend:
+    servicePort: 443
+    serviceName: kubernetes
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: test2
+  annotations:
+    access.cloudflare.com/application-sub-domain: ''
+    access.cloudflare.com/policies: |
+      [{"decision":"allow","include":[{"email_domain":{"domain":"example1.com"}},{"email_domain":{"domain":"example2.com"}},{"email_domain":{"domain":"example4.com"}}]}]
+spec:
+  backend:
+    servicePort: 443
+    serviceName: kubernetes
+---

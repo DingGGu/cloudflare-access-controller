@@ -9,6 +9,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"time"
 )
 
 var log = logf.Log.WithName("cloudflare-access-controller")
@@ -19,8 +20,11 @@ func main() {
 
 	logger := log.WithName("main")
 
+	syncPeriod := time.Second * 60
+
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		Namespace: options.WatchNamespace,
+		Namespace:  options.WatchNamespace,
+		SyncPeriod: &syncPeriod,
 	})
 	if nil != err {
 		logger.Error(err, "could not create manager")

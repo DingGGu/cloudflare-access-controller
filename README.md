@@ -27,6 +27,8 @@ annotations:
   access.cloudflare.com/policies: "[]" # https://api.cloudflare.com/#access-policy-create-access-policy
 ```
 
+`cac-policy-{#number}`
+
 #### Policy Examples
 - Allow login account email ends with ggu.la and mah.ye and IP address require 123.123.123.123/32 
 ```json

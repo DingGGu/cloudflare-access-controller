@@ -42,7 +42,7 @@ func (c *Controller) Reconcile(req reconcile.Request) (reconcile.Result, error) 
 
 	log.Info("Reconciling ingress")
 	if err := c.Provider.Reconcile(ctx, req, ingress, c.Recorder); err != nil {
-		log.Error(err, "Reconcile fail during upload to provider")
+		log.Error(err, "Reconcile fail")
 		return reconcile.Result{}, err
 	}
 
