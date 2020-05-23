@@ -3,13 +3,13 @@ package main
 import (
 	"github.com/DingGGu/cloudflare-access-controller/v2/internal/controllers"
 	"github.com/DingGGu/cloudflare-access-controller/v2/internal/providers"
+	"net/http"
 	"os"
 	runtime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"time"
 )
 
 var log = logf.Log.WithName("cloudflare-access-controller")
@@ -20,11 +20,11 @@ func main() {
 
 	logger := log.WithName("main")
 
-	syncPeriod := time.Second * 60
-
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		Namespace:  options.WatchNamespace,
-		SyncPeriod: &syncPeriod,
+		Namespace:              options.WatchNamespace,
+		SyncPeriod:             &options.SyncPeriodSecond,
+		MetricsBindAddress:     "0",
+		HealthProbeBindAddress: ":8888",
 	})
 	if nil != err {
 		logger.Error(err, "could not create manager")
@@ -47,6 +47,9 @@ func main() {
 		logger.Error(err, "could not create controller", "controllers", "ingress")
 		os.Exit(1)
 	}
+
+	_ = mgr.AddHealthzCheck("check", func(_ *http.Request) error { return nil })
+	_ = mgr.AddReadyzCheck("check", func(_ *http.Request) error { return nil })
 
 	if err := mgr.Start(runtime.SetupSignalHandler()); err != nil {
 		log.Error(err, "could not start manager")

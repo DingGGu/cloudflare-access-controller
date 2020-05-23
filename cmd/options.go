@@ -4,10 +4,12 @@ import (
 	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"os"
+	"time"
 )
 
 const (
-	defaultWatchNamespace = v1.NamespaceAll
+	defaultWatchNamespace   = v1.NamespaceAll
+	defaultSyncPeriodSecond = 60
 )
 
 type Options struct {
@@ -16,6 +18,7 @@ type Options struct {
 	ClusterName        string
 	WatchNamespace     string
 	CloudflareApiToken string
+	SyncPeriodSecond   time.Duration
 }
 
 func (options *Options) BindFlags(fs *pflag.FlagSet) {
@@ -25,12 +28,14 @@ func (options *Options) BindFlags(fs *pflag.FlagSet) {
 		`Namespace the controller watches for updates to Kubernetes objects.
 This includes Ingresses, Services and all configuration resources. All
 namespaces are watched if this parameter is left empty.`)
+	fs.DurationVar(&options.SyncPeriodSecond, "sync-period", defaultSyncPeriodSecond, `SyncPeriod determines the minimum frequency at which watched resources are reconciled. You have to enter the seconds, recommend 60 seconds or more`)
+	options.SyncPeriodSecond = options.SyncPeriodSecond * time.Second
 
 	fs.BoolVar(&options.Debug, "debug", false, "debugging")
 }
 
 func (options *Options) BindEnv() {
-	if s, ok := os.LookupEnv("CF_TOKEN"); ok {
+	if s, ok := os.LookupEnv("CF_API_TOKEN"); ok {
 		options.CloudflareApiToken = s
 	}
 }
