@@ -1,3 +1,4 @@
+![Deploy to docker hub](https://github.com/DingGGu/cloudflare-access-controller/workflows/Deploy%20to%20docker%20hub/badge.svg)
 # Cloudflare Access Controller
 
 Cloudflare Access Controller synchronizes Kubernetes Ingress with [Cloudflare Access](https://www.cloudflare.com/products/cloudflare-access/)
