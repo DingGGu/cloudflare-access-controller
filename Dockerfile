@@ -4,6 +4,8 @@ RUN apk update && apk add git && apk add make && apk add ca-certificates
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
+ENV GOFLAGS="-mod=readonly"
+
 COPY go.mod go.mod
 COPY go.sum go.sum
 # cache deps before building and copying source so that we don't need to re-download as much

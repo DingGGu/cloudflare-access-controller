@@ -1,9 +1,9 @@
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: test
   annotations:
-    access.cloudflare.com/application-sub-domain: 'test'
+    access.cloudflare.com/application-sub-domain: 'test1'
     access.cloudflare.com/application-path: '/test/login'
 spec:
   backend:
