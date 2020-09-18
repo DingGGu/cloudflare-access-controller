@@ -11,6 +11,8 @@ kubectl apply -f deploy/cloudflare-access-controller.yaml
 Access Policy is created with the name `cac-policy-{#number}`. Policy without start `cac-policy-` is ignored, so it can be configured by adding or changing it directly in your Cloudflare Dashboard. 
 
 ### Configuration guide
+Image is available here: [ghcr.io/dingggu/cloudflare-access-controller:latest](https://github.com/users/DingGGu/packages/container/package/cloudflare-access-controller)
+
 Execute with the following command:
 ```bash
 ./cloudflare-access-controller \

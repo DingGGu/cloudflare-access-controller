@@ -23,7 +23,7 @@ spec:
       serviceAccountName: cloudflare-access-controller
       containers:
         - name: cac
-          image: dingggu/cloudflare-access-controller:latest
+          image: ghcr.io/dingggu/cloudflare-access-controller:latest
           args:
             - -z
             - "$(CF_ZONE_NAME)"
