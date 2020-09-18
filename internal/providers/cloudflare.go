@@ -255,5 +255,6 @@ func NewCloudflare(apiToken string, log logr.Logger, zoneName, clusterName strin
 		os.Exit(1)
 	}
 
-	return &Cloudflare{client, log, zoneName, clusterUid, zoneId, store.New(client, zoneId)}
+	return &Cloudflare{client, log, zoneName, clusterUid, zoneId,
+		store.New(client, zoneId, log.WithName("store"))}
 }

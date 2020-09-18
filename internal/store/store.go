@@ -66,9 +66,10 @@ func (s *Store) GetPolicies(appId string) ([]cloudflare.AccessPolicy, error) {
 	return policies, nil
 }
 
-func New(client *cloudflare.API, zoneId string) *Store {
+func New(client *cloudflare.API, zoneId string, log logr.Logger) *Store {
 	return &Store{
 		client: client,
 		zoneId: zoneId,
+		log:    log,
 	}
 }
