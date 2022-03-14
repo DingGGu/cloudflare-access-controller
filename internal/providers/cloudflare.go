@@ -14,7 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/client-go/tools/record"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -51,7 +51,7 @@ func (r *Resource) PolicyEqual(index int, o cloudflare.AccessPolicy) bool {
 		cmp.Equal(p.Exclude, o.Exclude, cmpopts.EquateEmpty())
 }
 
-func (r *Resource) New(ingress *v1beta1.Ingress, resourceName string, zoneName string) (*Resource, error) {
+func (r *Resource) New(ingress *networkingv1.Ingress, resourceName string, zoneName string) (*Resource, error) {
 	r.Name = resourceName
 	r.Domain = strings.Join([]string{
 		ingress.Annotations[types.AnnotationApplicationSubDomain],
@@ -92,7 +92,7 @@ type Cloudflare struct {
 	store      *store.Store
 }
 
-func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingress *v1beta1.Ingress, recorder record.EventRecorder) error {
+func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingress *networkingv1.Ingress, recorder record.EventRecorder) error {
 	log := p.log.WithValues("ingress", req.NamespacedName)
 
 	if _, ok := ingress.Annotations[types.AnnotationApplicationSubDomain]; !ok {
@@ -108,11 +108,11 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 
 	log = log.WithValues("resourceName", r.Name)
 
-	if app, err := p.store.GetApplication(r.Name); err != nil {
+	if app, err := p.store.GetApplication(ctx, r.Name); err != nil {
 		if errors.Is(err, store.ApplicationNotFoundError) {
 			log.Info("Create access application")
 
-			app, err = p.client.CreateAccessApplication(p.zoneId, r.AccessApplication)
+			app, err = p.client.CreateAccessApplication(ctx, p.zoneId, r.AccessApplication)
 			if err != nil {
 				log.Error(err, "Cannot create access application", "domain", r.Domain)
 				recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot create access application (%s): %s", r.Domain, err.Error()))
@@ -122,7 +122,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 			recorder.Event(ingress, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created Access Application %s (%s) audience tag: %s", app.Name, r.Domain, app.AUD))
 
 			for i, policy := range r.Policies {
-				_, err := p.client.CreateAccessPolicy(p.zoneId, app.ID, policy)
+				_, err := p.client.CreateAccessPolicy(ctx, p.zoneId, app.ID, policy)
 				if err != nil {
 					log.Error(err, "Cannot create access policy", "policy", policy)
 					recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot create access policy: %v: %s", policy, err.Error()))
@@ -139,7 +139,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 	} else {
 		if !r.Equal(app) { // Check if AccessApplication need update
 			r.AccessApplication.ID = app.ID
-			if app, err = p.client.UpdateAccessApplication(p.zoneId, r.AccessApplication); err != nil {
+			if app, err = p.client.UpdateAccessApplication(ctx, p.zoneId, r.AccessApplication); err != nil {
 				log.Error(err, "Cannot update access application")
 				recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot update access application: %s", err.Error()))
 				return err
@@ -147,7 +147,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 			recorder.Event(ingress, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Update Access Application %s (%s): %s", app.Name, r.Domain, app.AUD))
 		}
 
-		originPolicies, err := p.store.GetPolicies(app.ID) // Get Policies
+		originPolicies, err := p.store.GetPolicies(ctx, app.ID) // Get Policies
 		if err != nil {
 			log.Error(err, "Cannot get access policies")
 			recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot get access policy: %s", err.Error()))
@@ -161,7 +161,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 			if i <= length-1 {
 				if !r.PolicyEqual(i, originPolicies[i]) {
 					policy.ID = originPolicies[i].ID
-					if _, err := p.client.UpdateAccessPolicy(p.zoneId, app.ID, policy); err != nil { // Update
+					if _, err := p.client.UpdateAccessPolicy(ctx, p.zoneId, app.ID, policy); err != nil { // Update
 						log.Error(err, "Cannot update access policies[%d]", i)
 						recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot update access policy[%d]: %s", i, err.Error()))
 						return err
@@ -174,7 +174,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 					continue
 				}
 			}
-			if _, err := p.client.CreateAccessPolicy(p.zoneId, app.ID, policy); err != nil { // Create
+			if _, err := p.client.CreateAccessPolicy(ctx, p.zoneId, app.ID, policy); err != nil { // Create
 				log.Error(err, "Cannot create access policies[%d]", i)
 				recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot create access policy[%d]: %s", i, err.Error()))
 				return err
@@ -188,7 +188,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 		if removeRange < length {
 			for i, policy := range originPolicies[removeRange:] {
 				idx := length - 1 + i
-				if err := p.client.DeleteAccessPolicy(p.zoneId, app.ID, policy.ID); err != nil { // Delete
+				if err := p.client.DeleteAccessPolicy(ctx, p.zoneId, app.ID, policy.ID); err != nil { // Delete
 					log.Error(err, "Cannot delete access policies[%d]", idx)
 					recorder.Event(ingress, corev1.EventTypeWarning, "Error", fmt.Sprintf("Cannot delete access policy[%d]: %s", idx, err.Error()))
 					return err
@@ -204,7 +204,7 @@ func (p *Cloudflare) Reconcile(ctx context.Context, req reconcile.Request, ingre
 	return nil
 }
 
-func (p *Cloudflare) Delete(ctx context.Context, req reconcile.Request, ingress *v1beta1.Ingress) error {
+func (p *Cloudflare) Delete(ctx context.Context, req reconcile.Request, ingress *networkingv1.Ingress) error {
 	log := p.log.WithValues("ingress", req.NamespacedName)
 
 	if _, ok := ingress.Annotations[types.AnnotationApplicationSubDomain]; !ok {
@@ -212,7 +212,7 @@ func (p *Cloudflare) Delete(ctx context.Context, req reconcile.Request, ingress 
 	}
 
 	resourceName := p.ResourceName(req)
-	if app, err := p.store.GetApplication(resourceName); err != nil {
+	if app, err := p.store.GetApplication(ctx, resourceName); err != nil {
 		if errors.Is(err, store.ApplicationNotFoundError) {
 			log.Info("Cannot find access application", "resourceName", resourceName)
 			return nil
@@ -220,7 +220,7 @@ func (p *Cloudflare) Delete(ctx context.Context, req reconcile.Request, ingress 
 		log.Error(err, "Error from getApplication", "resourceName", resourceName)
 		return err
 	} else {
-		return p.client.DeleteAccessApplication(p.zoneId, app.ID)
+		return p.client.DeleteAccessApplication(ctx, p.zoneId, app.ID)
 	}
 }
 

@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"github.com/spf13/pflag"
@@ -40,7 +40,7 @@ func (options *Options) BindEnv() {
 	}
 }
 
-func getOptions() *Options {
+func GetOptions() *Options {
 	options := new(Options)
 
 	fs := pflag.NewFlagSet("", pflag.ExitOnError)

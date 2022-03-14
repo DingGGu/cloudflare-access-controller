@@ -6,8 +6,7 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"github.com/go-logr/logr"
-	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
-	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	runtime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,11 +20,10 @@ type Controller struct {
 	Provider providers.Provider
 }
 
-func (c *Controller) Reconcile(req reconcile.Request) (reconcile.Result, error) {
-	ctx := context.Background()
+func (c *Controller) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 	log := c.Log.WithValues("ingress", req.NamespacedName)
 
-	ingress := &networkingv1beta1.Ingress{}
+	ingress := &networkingv1.Ingress{}
 	if err := c.Client.Get(ctx, req.NamespacedName, ingress); err != nil {
 		if !errors.IsNotFound(err) {
 			log.Error(err, "Could not fetch ingress")
@@ -51,7 +49,6 @@ func (c *Controller) Reconcile(req reconcile.Request) (reconcile.Result, error) 
 
 func (c *Controller) New(mgr runtime.Manager) error {
 	return runtime.NewControllerManagedBy(mgr).
-		For(&networkingv1beta1.Ingress{}).
-		For(&extensionsv1beta1.Ingress{}).
+		For(&networkingv1.Ingress{}).
 		Complete(c)
 }

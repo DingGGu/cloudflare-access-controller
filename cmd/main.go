@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/DingGGu/cloudflare-access-controller/v2/internal"
 	"github.com/DingGGu/cloudflare-access-controller/v2/internal/controllers"
 	"github.com/DingGGu/cloudflare-access-controller/v2/internal/providers"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	options := getOptions()
+	options := internal.GetOptions()
 	log.SetLogger(zap.New(zap.UseDevMode(options.Debug)))
 
 	logger := log.Log.WithName("main")

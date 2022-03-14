@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-logr/logr"
@@ -18,8 +19,8 @@ type Store struct {
 	log    logr.Logger
 }
 
-func (s *Store) GetApplication(name string) (cloudflare.AccessApplication, error) {
-	if err := s.getApplications(); err != nil {
+func (s *Store) GetApplication(ctx context.Context, name string) (cloudflare.AccessApplication, error) {
+	if err := s.getApplications(ctx); err != nil {
 		return cloudflare.AccessApplication{}, err
 	}
 
@@ -32,11 +33,11 @@ func (s *Store) GetApplication(name string) (cloudflare.AccessApplication, error
 	return cloudflare.AccessApplication{}, ApplicationNotFoundError
 }
 
-func (s *Store) getApplications() error {
+func (s *Store) getApplications(ctx context.Context) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	res, _, err := s.client.AccessApplications(s.zoneId, cloudflare.PaginationOptions{})
+	res, _, err := s.client.AccessApplications(ctx, s.zoneId, cloudflare.PaginationOptions{})
 	if err != nil {
 		s.log.Error(err, "Cannot get access applications")
 		return err
@@ -46,11 +47,11 @@ func (s *Store) getApplications() error {
 	return nil
 }
 
-func (s *Store) GetPolicies(appId string) ([]cloudflare.AccessPolicy, error) {
+func (s *Store) GetPolicies(ctx context.Context, appId string) ([]cloudflare.AccessPolicy, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	res, _, err := s.client.AccessPolicies(s.zoneId, appId, cloudflare.PaginationOptions{})
+	res, _, err := s.client.AccessPolicies(ctx, s.zoneId, appId, cloudflare.PaginationOptions{})
 	if err != nil {
 		return nil, err
 	}

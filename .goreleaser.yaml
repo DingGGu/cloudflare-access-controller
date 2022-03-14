@@ -1,0 +1,38 @@
+env:
+- CGO_ENABLED=0
+- GOFLAGS=-mod=readonly
+
+builds:
+- id: cloudflare-access-controller
+  main: cmd/main.go
+  binary: cloudflare-access-controller
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+
+dockers:
+- ids:
+  - cloudflare-access-controller
+  image_templates:
+  - "ghcr.io/dingggu/cloudflare-access-controller:latest"
+  - "ghcr.io/dingggu/cloudflare-access-controller:{{ .Version }}"
+  build_flag_templates:
+  - "--label=org.opencontainers.image.created={{.Date}}"
+  - "--label=org.opencontainers.image.title={{.ProjectName}}"
+  - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+  - "--label=org.opencontainers.image.version={{.Version}}"
+  - "--label=org.opencontainers.image.source=https://github.com/DingGGu/cloudflare-access-controller"
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "snapshot-{{ .ShortCommit }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
