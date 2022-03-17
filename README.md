@@ -1,19 +1,33 @@
 ![Deploy to docker hub](https://github.com/DingGGu/cloudflare-access-controller/workflows/Deploy%20to%20docker%20hub/badge.svg)
+
 # Cloudflare Access Controller
 
-Cloudflare Access Controller synchronizes Kubernetes Ingress with [Cloudflare Access](https://www.cloudflare.com/products/cloudflare-access/)
+Cloudflare Access Controller synchronizes Kubernetes Ingress
+with [Cloudflare Access](https://www.cloudflare.com/products/cloudflare-access/)
+
+### Prerequisites
+
+| Kubernetes Version | Cloudflare Access Controller Version |
+|--------------------|--------------------------------------|
+| > = 1.22            | > = 2.1.0                             |
+| <= 1.21            | 2.0.0                                |
 
 ### Deploy
+
 ```bash
 kubectl apply -f deploy/cloudflare-access-controller.yaml
 ```
 
-Access Policy is created with the name `cac-policy-{#number}`. Policy without start `cac-policy-` is ignored, so it can be configured by adding or changing it directly in your Cloudflare Dashboard. 
+Access Policy is created with the name `cac-policy-{#number}`. Policy without start `cac-policy-` is ignored, so it can
+be configured by adding or changing it directly in your Cloudflare Dashboard.
 
 ### Configuration guide
-Image is available here: [ghcr.io/dingggu/cloudflare-access-controller:latest](https://github.com/users/DingGGu/packages/container/package/cloudflare-access-controller)
+
+Image is available
+here: [ghcr.io/dingggu/cloudflare-access-controller:latest](https://github.com/users/DingGGu/packages/container/package/cloudflare-access-controller)
 
 Execute with the following command:
+
 ```bash
 ./cloudflare-access-controller \
 -z cloudflare.zone.name \
@@ -21,6 +35,7 @@ Execute with the following command:
 ```
 
 or figure out with
+
 ```
 ./cloudflare-access-controller -h
 ```
