@@ -1,4 +1,4 @@
-![Deploy to docker hub](https://github.com/DingGGu/cloudflare-access-controller/workflows/Deploy%20to%20docker%20hub/badge.svg)
+[![Deploy to docker](https://github.com/DingGGu/cloudflare-access-controller/actions/workflows/docker.yml/badge.svg)](https://github.com/DingGGu/cloudflare-access-controller/actions/workflows/docker.yml)
 
 # Cloudflare Access Controller
 
