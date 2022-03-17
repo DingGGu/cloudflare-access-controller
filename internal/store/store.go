@@ -37,7 +37,7 @@ func (s *Store) getApplications(ctx context.Context) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	res, _, err := s.client.AccessApplications(ctx, s.zoneId, cloudflare.PaginationOptions{})
+	res, _, err := s.client.ZoneLevelAccessApplications(ctx, s.zoneId, cloudflare.PaginationOptions{})
 	if err != nil {
 		s.log.Error(err, "Cannot get access applications")
 		return err
@@ -51,7 +51,7 @@ func (s *Store) GetPolicies(ctx context.Context, appId string) ([]cloudflare.Acc
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	res, _, err := s.client.AccessPolicies(ctx, s.zoneId, appId, cloudflare.PaginationOptions{})
+	res, _, err := s.client.ZoneLevelAccessPolicies(ctx, s.zoneId, appId, cloudflare.PaginationOptions{})
 	if err != nil {
 		return nil, err
 	}
