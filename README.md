@@ -9,7 +9,7 @@ with [Cloudflare Access](https://www.cloudflare.com/products/cloudflare-access/)
 
 | Kubernetes Version | Cloudflare Access Controller Version |
 |--------------------|--------------------------------------|
-| > = 1.22            | > = 2.1.0                             |
+| >= 1.22            | >= 2.1.0                             |
 | <= 1.21            | 2.0.0                                |
 
 ### Deploy
